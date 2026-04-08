@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlabTrackr</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#F59E0B;--bg:#0A0A0F;--surface:#111118;--card:#18181F;
+  --border:rgba(255,255,255,0.07);--text:#F0F0F0;--muted:#666;--dim:#333;
+  --green:#34D399;--red:#F87171;--body:#F0EEE8;--white:#fff;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--body);}
+
+/* AUTH */
+#authWrap{display:flex;min-height:100vh;background:var(--bg);}
+.al{width:48%;background:#111118;display:flex;flex-direction:column;justify-content:center;padding:60px;border-right:1px solid rgba(255,255,255,0.07);}
+.ar{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;}
+.al-logo{display:flex;align-items:center;gap:10px;margin-bottom:40px;}
+.al-logo-box{width:34px;height:34px;background:var(--gold);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.al-logo-name{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;}
+.al-title{font-family:'Bebas Neue',sans-serif;font-size:60px;line-height:.9;letter-spacing:2px;color:#fff;margin-bottom:20px;}
+.al-title em{color:var(--gold);font-style:normal;}
+.al-desc{font-size:14px;color:#666;line-height:1.7;margin-bottom:32px;max-width:340px;}
+.al-feat{display:flex;align-items:center;gap:10px;font-size:13px;color:#555;margin-bottom:10px;}
+.al-dot{width:5px;height:5px;background:var(--gold);border-radius:50%;}
+.abox{width:100%;max-width:380px;}
+.atabs{display:flex;background:#1a1a22;border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:3px;margin-bottom:24px;}
+.atab{flex:1;padding:9px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;border-radius:7px;color:#555;border:none;background:transparent;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.atab.on{background:var(--gold);color:#000;font-weight:700;}
+.atitle{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1.5px;color:#fff;margin-bottom:4px;}
+.asub{font-size:13px;color:#555;margin-bottom:22px;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#555;margin-bottom:6px;}
+.fg input,.fg select{width:100%;background:#1a1a22;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:11px 13px;font-size:14px;font-family:'DM Sans',sans-serif;color:#f0f0f0;outline:none;transition:border-color .2s;}
+.fg input::placeholder{color:#333;}
+.fg input:focus{border-color:var(--gold);}
+.fg select option{background:#1a1a22;}
+.btn-gold{width:100%;background:var(--gold);color:#000;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;padding:12px;border:none;border-radius:8px;cursor:pointer;margin-top:4px;}
+.btn-gold:hover{opacity:.88;}
+.btn-gold:disabled{opacity:.4;cursor:not-allowed;}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.1);color:#666;font-family:'DM Sans',sans-serif;font-size:12px;padding:7px 14px;border-radius:7px;cursor:pointer;}
+.btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,0.2);}
+.trial{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:13px;margin-top:16px;display:flex;align-items:center;gap:12px;}
+.trial-n{width:28px;height:28px;background:var(--gold);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;flex-shrink:0;}
+.trial-t{font-size:12px;color:#555;line-height:1.4;}
+.trial-t strong{color:var(--gold);}
+.amsg{padding:10px 13px;border-radius:7px;font-size:12px;margin-bottom:12px;display:none;}
+.amsg.err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:#F87171;display:block;}
+.amsg.ok{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:#34D399;display:block;}
+
+/* APP SHELL */
+#appWrap{display:none;flex-direction:column;min-height:100vh;}
+
+/* HEADER */
+header{background:var(--bg);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.hdr-brand{display:flex;align-items:center;gap:10px;}
+.hdr-icon{width:28px;height:28px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text);}
+.hdr-center{position:absolute;left:50%;transform:translateX(-50%);text-align:center;}
+.hdr-center h1{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:var(--text);}
+.hdr-center h1 em{color:var(--gold);font-style:normal;}
+.hdr-center p{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#444;margin-top:1px;}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.user-chip{font-size:11px;color:#444;background:var(--card);border:1px solid var(--border);padding:4px 12px;border-radius:20px;}
+
+/* TABS */
+.tabbar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 32px;}
+.tabbtn{padding:12px 20px;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:#444;cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.tabbtn.on{color:var(--text);border-bottom-color:var(--gold);}
+.tab-cnt{background:var(--gold);color:#000;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;margin-left:4px;}
+
+/* KPI BAR */
+.kpibar{background:var(--surface);border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);}
+.kpi{padding:20px 32px;border-right:1px solid var(--border);}
+.kpi:last-child{border-right:none;}
+.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#444;margin-bottom:6px;}
+.kpi-val{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:1px;color:var(--text);}
+.kpi-val.gold{color:var(--gold);}
+.kpi-val.green{color:var(--green);}
+.kpi-val.red{color:var(--red);}
+
+/* MAIN */
+.main{padding:24px 32px;flex:1;}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.toolbar-l{display:flex;align-items:center;gap:10px;}
+.toolbar-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:#1a1a1a;}
+.toolbar-cnt{font-size:12px;color:#999;}
+.toolbar-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.t-inp{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:7px;padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;color:#333;outline:none;width:180px;}
+.t-inp:focus{border-color:rgba(245,158,11,.4);}
+.t-sel{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:7px;padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;color:#666;outline:none;cursor:pointer;}
+.t-btn{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:7px;padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;color:#666;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.t-btn:hover{border-color:rgba(0,0,0,0.2);color:#333;}
+.t-btn:disabled{opacity:.5;cursor:not-allowed;}
+.t-btn.gold{background:var(--gold);color:#000;border-color:var(--gold);font-weight:600;}
+
+/* BREADCRUMB */
+.bc{display:flex;align-items:center;gap:8px;font-size:13px;}
+.bc-back{color:var(--gold);cursor:pointer;font-weight:600;}
+.bc-back:hover{text-decoration:underline;}
+.bc-sep{color:#aaa;}
+.bc-cur{color:#1a1a1a;font-weight:600;}
+
+/* SPORT CARDS (Level 1) */
+.sport-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+.sport-card{background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .1s;}
+.sport-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.1);transform:translateY(-2px);}
+.sport-stripe{height:6px;}
+.sport-stripe.baseball{background:#EF4444;}
+.sport-stripe.basketball{background:#F97316;}
+.sport-stripe.football{background:#22C55E;}
+.sport-stripe.hockey{background:#3B82F6;}
+.sport-stripe.other{background:#8B5CF6;}
+.sport-body{padding:22px;}
+.sport-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.sport-ico{font-size:22px;}
+.sport-name{font-size:16px;font-weight:700;color:#1a1a1a;flex:1;}
+.sport-arrow{color:#ccc;font-size:20px;}
+.sport-meta{font-size:12px;color:#999;margin-bottom:16px;}
+.sport-val{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:1px;color:#1a1a1a;margin-bottom:6px;}
+.sport-gain{font-size:13px;font-weight:600;margin-top:4px;}
+
+/* PLAYER LIST (Level 2) */
+.sport-summary-bar{display:flex;gap:20px;align-items:center;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#888;}
+.player-row{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:10px;padding:14px 18px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,transform .1s;}
+.player-row:hover{box-shadow:0 2px 12px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.player-avatar{width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;}
+.player-info{flex:1;}
+.player-name{font-size:14px;font-weight:700;color:#1a1a1a;}
+.player-meta{font-size:11px;color:#999;margin-top:1px;}
+.player-stats{text-align:right;margin-right:12px;}
+.player-val{font-size:15px;font-weight:700;color:var(--gold);}
+.player-gain{font-size:11px;font-weight:600;margin-top:1px;}
+.row-arrow{color:#ccc;font-size:20px;}
+
+/* CARD GRID (Level 3) */
+.player-summary{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:20px;margin-bottom:20px;}
+.player-summary-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#000;flex-shrink:0;}
+.ps-info{flex:1;}
+.ps-name{font-size:18px;font-weight:700;color:#1a1a1a;}
+.ps-meta{font-size:12px;color:#999;margin-top:2px;}
+.ps-stats{text-align:right;}
+.ps-val{font-size:22px;font-weight:700;color:var(--gold);}
+.ps-gain{font-size:12px;font-weight:600;margin-top:2px;}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;}
+.c{background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:10px;overflow:hidden;transition:box-shadow .15s,transform .1s;}
+.c:hover{box-shadow:0 2px 12px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.c-stripe{height:4px;}
+.c-stripe.baseball{background:#EF4444;}
+.c-stripe.basketball{background:#F97316;}
+.c-stripe.football{background:#22C55E;}
+.c-stripe.hockey{background:#3B82F6;}
+.c-stripe.other{background:#8B5CF6;}
+.c-body{padding:12px;}
+.c-player{font-size:13px;font-weight:700;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;}
+.c-set{font-size:10px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:10px;}
+.c-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.c-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#bbb;}
+.c-val{font-size:13px;font-weight:700;color:#1a1a1a;}
+.c-val.gold{color:var(--gold);}
+.c-val.green{color:var(--green);}
+.c-val.red{color:var(--red);}
+.c-foot{display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);margin-top:4px;}
+.sig{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:4px;}
+.sig-sb{background:rgba(52,211,153,.15);color:#059669;}
+.sig-b{background:rgba(96,165,250,.15);color:#2563EB;}
+.sig-h{background:rgba(0,0,0,.07);color:#666;}
+.sig-w{background:rgba(251,191,36,.15);color:#D97706;}
+.sig-s{background:rgba(248,113,113,.15);color:#DC2626;}
+.c-grade{font-size:10px;color:#aaa;}
+
+/* PLAYER TILES (Level 2) */
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.player-tile{background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .1s;position:relative;}
+.player-tile:hover{box-shadow:0 4px 20px rgba(0,0,0,0.1);transform:translateY(-2px);}
+.player-tile-stripe{height:6px;}
+.player-tile-body{padding:18px;}
+.player-tile-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.player-tile-name{font-size:15px;font-weight:700;color:#1a1a1a;line-height:1.2;flex:1;margin-right:8px;}
+.player-tile-cnt{background:#2563EB;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0;}
+.player-tile-val{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:#1a1a1a;margin-bottom:6px;}
+.player-tile-gain{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.player-tile-gain-val{font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;}
+.gain-up{background:rgba(52,211,153,.15);color:#059669;}
+.gain-dn{background:rgba(248,113,113,.15);color:#DC2626;}
+.player-tile-sigs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;}
+.player-tile-grade{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;margin-right:3px;}
+.grade-psa{background:#1a56db;}
+.grade-bgs{background:#7e3af2;}
+.grade-sgc{background:#c81e1e;}
+.grade-raw{background:#6b7280;}
+.player-tile-bar-wrap{margin-top:8px;border-top:1px solid rgba(0,0,0,0.05);padding-top:10px;}
+.player-tile-bar-lbl{display:flex;justify-content:space-between;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#aaa;margin-bottom:5px;}
+.player-tile-bar-bg{background:#e5e7eb;border-radius:2px;height:4px;}
+.player-tile-bar-fill{background:#2563EB;border-radius:2px;height:4px;}
+
+/* CARD DETAIL TILES (Level 3) */
+.card-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px;}
+.cd{background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.04);}
+.cd-top-stripe{height:5px;}
+.cd-header{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 20px 14px;}
+.cd-player{font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;}
+.cd-set{font-size:11px;color:#999;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cd-grade-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;color:#fff;flex-shrink:0;}
+.cd-section{padding:0 20px 14px;}
+.cd-section-lbl{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#aaa;margin-bottom:8px;}
+.cd-mktval{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:#1a1a1a;margin-bottom:4px;}
+.cd-gain{font-size:13px;font-weight:700;}
+.cd-proj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
+.cd-proj-box{background:#f8f7f4;border-radius:7px;padding:8px 10px;}
+.cd-proj-lbl{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#aaa;margin-bottom:3px;}
+.cd-proj-val{font-size:14px;font-weight:700;color:#1a1a1a;}
+.cd-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+.cd-price-box{background:#f8f7f4;border-radius:7px;padding:8px 10px;}
+.cd-price-lbl{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#aaa;margin-bottom:3px;}
+.cd-price-val{font-size:16px;font-weight:700;color:#1a1a1a;}
+.cd-price-val.gold{color:var(--gold);}
+.cd-minprice-box{background:#f8f7f4;border-radius:7px;padding:8px 10px;margin-bottom:12px;}
+.cd-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:2px solid rgba(0,0,0,0.05);}
+.cd-cert{font-size:10px;color:#aaa;letter-spacing:.05em;text-transform:uppercase;}
+.cd-proj-yr{font-size:12px;color:#666;font-weight:600;}
+
+/* SPORT SUMMARY STATS BAR */
+.sport-stat-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.sport-stat-box{background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:10px;padding:12px 18px;min-width:110px;}
+.sport-stat-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-bottom:4px;}
+.sport-stat-val{font-size:18px;font-weight:700;color:#1a1a1a;}
+.sport-stat-val.gold{color:var(--gold);}
+.sport-stat-val.green{color:#059669;}
+.sport-stat-val.red{color:#DC2626;}
+
+/* FOR SALE */
+.fs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.fs-card{background:#fff;border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:18px;}
+.fs-badge{display:inline-block;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:var(--gold);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-bottom:10px;}
+.fs-player{font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:2px;}
+.fs-set{font-size:11px;color:#999;margin-bottom:12px;}
+.fs-price{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold);}
+.fs-mkt{font-size:11px;color:#999;margin-top:2px;}
+
+/* EMPTY */
+.empty{text-align:center;padding:72px 20px;color:#aaa;}
+.empty-ico{font-size:44px;margin-bottom:14px;}
+.empty-ttl{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#333;margin-bottom:6px;}
+.empty-sub{font-size:13px;line-height:1.6;margin-bottom:20px;}
+.empty-btns{display:flex;gap:10px;justify-content:center;}
+
+/* PROGRESS */
+.prog-wrap{background:#e5e0d5;border-radius:2px;margin:0 32px 0;display:none;}
+.prog-bar{background:var(--gold);height:3px;border-radius:2px;width:0%;transition:width .3s;}
+.prog-lbl{font-size:11px;color:#888;padding:6px 32px;display:none;}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;}
+.overlay.open{display:flex;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:540px;padding:28px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);}
+.modal-ttl{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:#1a1a1a;margin-bottom:3px;}
+.modal-sub{font-size:12px;color:#999;margin-bottom:22px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mfg label{display:block;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#999;margin-bottom:6px;}
+.mfg input,.mfg select{width:100%;background:#f8f7f4;border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1a1a1a;outline:none;transition:border-color .2s;}
+.mfg input:focus{border-color:var(--gold);}
+.mfg{margin-bottom:12px;}
+.mfooter{display:flex;gap:8px;margin-top:18px;}
+.mfooter .btn-gold{flex:1;margin-top:0;}
+.mbtn-ghost{background:transparent;border:1px solid rgba(0,0,0,.1);color:#999;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 16px;border-radius:8px;cursor:pointer;}
+.mmsg{padding:10px 13px;border-radius:7px;font-size:12px;margin-bottom:12px;display:none;}
+.mmsg.err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:#DC2626;display:block;}
+.mmsg.ok{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:#059669;display:block;}
+
+/* CSV */
+.csv-drop{border:2px dashed rgba(245,158,11,.25);border-radius:10px;padding:40px;text-align:center;cursor:pointer;transition:background .2s;}
+.csv-drop:hover,.csv-drop.over{background:rgba(245,158,11,.04);}
+.csv-prev{margin-top:14px;background:#f8f7f4;border-radius:7px;padding:12px;font-size:11px;color:#999;max-height:160px;overflow-y:auto;display:none;line-height:1.6;}
+
+@media(max-width:700px){
+  .al{display:none;}
+  .kpibar{grid-template-columns:repeat(2,1fr);}
+  .main{padding:16px;}
+  header{padding:0 16px;}
+  .kpi{padding:14px 16px;}
+  .tabbar{padding:0 16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="authWrap">
+  <div class="al">
+    <div class="al-logo">
+      <div class="al-logo-box">🏆</div>
+      <span class="al-logo-name">SLABTRACKR</span>
+    </div>
+    <div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:16px;">Sports Card Portfolio Tracker</div>
+    <h1 class="al-title">KNOW YOUR<br><em>COLLECTION'S</em><br>WORTH.</h1>
+    <p class="al-desc">Real-time valuations, market signals, and portfolio analytics for serious collectors.</p>
+    <div class="al-feat"><div class="al-dot"></div>eBay-powered live market pricing</div>
+    <div class="al-feat"><div class="al-dot"></div>SlabTrackr estimated value formula</div>
+    <div class="al-feat"><div class="al-dot"></div>Strong Buy / Hold / Sell signals</div>
+    <div class="al-feat"><div class="al-dot"></div>3-level sport → player → card drill-down</div>
+  </div>
+  <div class="ar">
+    <div class="abox">
+      <div class="atabs">
+        <button class="atab on" id="tLogin" onclick="swAuth('login')">Sign In</button>
+        <button class="atab" id="tSignup" onclick="swAuth('signup')">Create Account</button>
+      </div>
+      <div class="atitle" id="aTitle">WELCOME BACK</div>
+      <div class="asub" id="aSub">Sign in to your SlabTrackr account</div>
+      <div class="amsg" id="aMsg"></div>
+      <div id="loginF">
+        <div class="fg"><label>Email</label><input type="email" id="lEmail" placeholder="you@example.com"></div>
+        <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="••••••••"></div>
+        <button class="btn-gold" id="lBtn" onclick="doLogin()">Sign In</button>
+      </div>
+      <div id="signupF" style="display:none;">
+        <div class="fg"><label>Full Name</label><input type="text" id="sName" placeholder="Your name"></div>
+        <div class="fg"><label>Email</label><input type="email" id="sEmail" placeholder="you@example.com"></div>
+        <div class="fg"><label>Password</label><input type="password" id="sPass" placeholder="Min. 8 characters"></div>
+        <button class="btn-gold" id="sBtn" onclick="doSignup()">Start Free Trial</button>
+        <div class="trial">
+          <div class="trial-n">7</div>
+          <div class="trial-t"><strong>7-day free trial</strong> — No credit card required.<br>Then $14.99/month.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appWrap">
+  <header>
+    <div class="hdr-brand"></div>
+    <div class="hdr-center">
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;color:#fff;">SLAB<em style="color:var(--gold);font-style:normal;">TRACKR</em></h1>
+      <p style="font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#888;margin-top:2px;">Sports Card Portfolio Tracker</p>
+    </div>
+    <div class="hdr-right">
+      <span class="user-chip" id="uEmail"></span>
+      <button class="btn-ghost" id="refBtn" onclick="refreshPrices()" style="border-color:rgba(245,158,11,.3);color:var(--gold);">⚡ Refresh Prices</button>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="tabbar">
+    <button class="tabbtn on" id="tb0" onclick="goTab(0)">My Collection</button>
+    <button class="tabbtn" id="tb1" onclick="goTab(1)">For Sale <span class="tab-cnt" id="fsCnt">0</span></button>
+    <button class="tabbtn" id="tb2" onclick="goTab(2)">Sold</button>
+  </div>
+
+  <div class="kpibar">
+    <div class="kpi"><div class="kpi-lbl">Total Value</div><div class="kpi-val gold" id="kVal">—</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Cost</div><div class="kpi-val" id="kCost">—</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Gain</div><div class="kpi-val" id="kGain">—</div></div>
+    <div class="kpi"><div class="kpi-lbl">Return</div><div class="kpi-val" id="kRet">—</div></div>
+  </div>
+
+  <div class="prog-lbl" id="progLbl"></div>
+  <div class="prog-wrap" id="progWrap"><div class="prog-bar" id="progBar"></div></div>
+
+  <div class="main" id="mainArea">
+    <div class="empty"><div class="empty-ico">⏳</div><div class="empty-ttl">LOADING...</div></div>
+  </div>
+</div>
+
+<!-- ADD CARD MODAL -->
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-ttl">ADD CARD</div>
+    <div class="modal-sub">Enter your card details below</div>
+    <div class="frow">
+      <div class="mfg"><label>Player Name *</label><input type="text" id="fp" placeholder="Mike Trout"></div>
+      <div class="mfg"><label>Sport</label>
+        <select id="fsp"><option value="">Select...</option><option value="baseball">Baseball</option><option value="basketball">Basketball</option><option value="football">Football</option><option value="hockey">Hockey</option><option value="other">Other</option></select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="mfg"><label>Year</label><input type="text" id="fyr" placeholder="2023"></div>
+      <div class="mfg"><label>Brand</label><input type="text" id="fbr" placeholder="Topps"></div>
+    </div>
+    <div class="frow">
+      <div class="mfg"><label>Set</label><input type="text" id="fst" placeholder="Chrome"></div>
+      <div class="mfg"><label>Parallel</label><input type="text" id="fpa" placeholder="Gold Refractor"></div>
+    </div>
+    <div class="frow">
+      <div class="mfg"><label>Card #</label><input type="text" id="fcn" placeholder="100"></div>
+      <div class="mfg"><label>Print Run</label><input type="text" id="fpr" placeholder="50"></div>
+    </div>
+    <div class="frow">
+      <div class="mfg"><label>Grader</label>
+        <select id="fgr"><option value="">Not graded</option><option value="PSA">PSA</option><option value="BGS">BGS</option><option value="SGC">SGC</option><option value="CGC">CGC</option></select>
+      </div>
+      <div class="mfg"><label>Grade</label><input type="text" id="fgd" placeholder="PSA 10"></div>
+    </div>
+    <div class="frow">
+      <div class="mfg"><label>Purchase Price ($)</label><input type="text" id="fpp" placeholder="0.00"></div>
+      <div class="mfg"><label>Purchased From</label><input type="text" id="ffr" placeholder="eBay"></div>
+    </div>
+    <div class="frow">
+      <div class="mfg"><label>Purchase Date</label><input type="text" id="fpd" placeholder="2024-01-15"></div>
+      <div class="mfg"><label>Cert #</label><input type="text" id="fct" placeholder="12345678"></div>
+    </div>
+    <div class="mfg"><label>Notes</label><input type="text" id="fnt" placeholder="Any notes..."></div>
+    <div class="mmsg" id="addMsg"></div>
+    <div class="mfooter">
+      <button class="mbtn-ghost" onclick="closeM('addModal')">Cancel</button>
+      <button class="btn-gold" onclick="saveCard()">Save Card</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV MODAL -->
+<div class="overlay" id="csvModal">
+  <div class="modal">
+    <div class="modal-ttl">UPLOAD CSV</div>
+    <div class="modal-sub">Upload a Card Ladder CSV export or any spreadsheet</div>
+    <div class="csv-drop" id="csvDrop" onclick="document.getElementById('csvFile').click()">
+      <div style="font-size:32px;margin-bottom:10px;">📂</div>
+      <div style="font-size:14px;font-weight:600;color:#333;margin-bottom:6px;">Drop your CSV here</div>
+      <div style="font-size:12px;color:#999;">or click to browse</div>
+      <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSV(this)">
+    </div>
+    <div class="csv-prev" id="csvPrev"></div>
+    <div style="font-size:11px;color:#aaa;margin-top:12px;line-height:1.6;">
+      <strong style="color:#666;">Card Ladder columns:</strong> Date Purchased, Card, Player, Year, Set, Variation, Number, Category, Condition, Investment, Current Value
+    </div>
+    <div class="mmsg" id="csvMsg"></div>
+    <div class="mfooter">
+      <button class="mbtn-ghost" onclick="closeM('csvModal')">Cancel</button>
+      <button class="btn-gold" id="csvBtn" onclick="importCSV()" disabled>Import Cards</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SURL='https://gtvwpkurlefsmpvytnan.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0dndwa3VybGVmc21wdnl0bmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1ODgyNTgsImV4cCI6MjA5MTE2NDI1OH0.PXvolXVpPhsPWV7ueFz0RhC4qGC6L2_RpqHjH3LdS30';
+const EDGE='https://gtvwpkurlefsmpvytnan.supabase.co/functions/v1/ebay-price';
+const {createClient}=supabase;
+const sb=createClient(SURL,SKEY);
+
+let allCards=[], csvRows=[], curTab=0, curUser=null;
+let drillSport=null, drillPlayer=null;
+
+// HELPERS
+const $=id=>document.getElementById(id);
+const $n=v=>{if(v==null||isNaN(v))return'—';return'$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});};
+const $p=v=>{if(v==null||!isFinite(v))return'—';return(v>=0?'+':'')+Number(v).toFixed(1)+'%';};
+const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():'';
+
+function sportCls(s){
+  if(!s)return'other';
+  const l=s.toLowerCase();
+  if(l.includes('base'))return'baseball';
+  if(l.includes('basket'))return'basketball';
+  if(l.includes('foot'))return'football';
+  if(l.includes('hockey'))return'hockey';
+  return'other';
+}
+function sportIco(s){
+  if(!s)return'🃏';
+  const l=s.toLowerCase();
+  if(l.includes('base'))return'⚾';
+  if(l.includes('basket'))return'🏀';
+  if(l.includes('foot'))return'🏈';
+  if(l.includes('hockey'))return'🏒';
+  if(l.includes('disney'))return'🎬';
+  if(l.includes('wwe')||l.includes('ufc'))return'🥊';
+  return'🃏';
+}
+function sigCls(s){
+  const m={'Strong Buy':'sb','Buy':'b','Hold':'h','Watch':'w','Sell':'s'};
+  return'sig sig-'+(m[s]||'h');
+}
+function showMsg(id,txt,type){const el=$(id);if(!el)return;el.textContent=txt;el.className=(id.startsWith('a')?'amsg ':'mmsg ')+(type==='error'?'err':'ok');}
+function clearMsg(id){const el=$(id);if(el)el.className=id.startsWith('a')?'amsg':'mmsg';}
+
+// AUTH
+function swAuth(t){
+  clearMsg('aMsg');
+  const isL=t==='login';
+  $('tLogin').classList.toggle('on',isL);
+  $('tSignup').classList.toggle('on',!isL);
+  $('loginF').style.display=isL?'block':'none';
+  $('signupF').style.display=isL?'none':'block';
+  $('aTitle').textContent=isL?'WELCOME BACK':'START FOR FREE';
+  $('aSub').textContent=isL?'Sign in to your SlabTrackr account':'7-day trial, no credit card needed';
+}
+
+async function doLogin(){
+  clearMsg('aMsg');
+  const email=$('lEmail').value.trim(), pass=$('lPass').value;
+  if(!email||!pass)return showMsg('aMsg','Please fill in all fields.','error');
+  const btn=$('lBtn');btn.disabled=true;btn.textContent='Signing in...';
+  const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){showMsg('aMsg',error.message,'error');btn.disabled=false;btn.textContent='Sign In';}
+  else{curUser=data.user;bootApp();}
+}
+
+async function doSignup(){
+  clearMsg('aMsg');
+  const name=$('sName').value.trim(),email=$('sEmail').value.trim(),pass=$('sPass').value;
+  if(!name||!email||!pass)return showMsg('aMsg','Please fill in all fields.','error');
+  if(pass.length<8)return showMsg('aMsg','Password must be at least 8 characters.','error');
+  const btn=$('sBtn');btn.disabled=true;btn.textContent='Creating account...';
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+  if(error){showMsg('aMsg',error.message,'error');btn.disabled=false;btn.textContent='Start Free Trial';}
+  else if(data.user){
+    await sb.from('profiles').upsert({id:data.user.id,email,trial_ends_at:new Date(Date.now()+7*86400000).toISOString()},{onConflict:'id'});
+    curUser=data.user;bootApp();
+  } else{showMsg('aMsg','Check your email to confirm, then sign in.','ok');btn.disabled=false;btn.textContent='Start Free Trial';}
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  $('appWrap').style.display='none';
+  $('authWrap').style.display='flex';
+  allCards=[];
+}
+
+// BOOT
+async function bootApp(){
+  $('authWrap').style.display='none';
+  $('appWrap').style.display='flex';
+  $('uEmail').textContent=curUser.email;
+  await loadCards();
+  goTab(0);
+}
+
+async function loadCards(){
+  const{data,error}=await sb.from('cards').select('*').eq('user_id',curUser.id).order('created_at',{ascending:false});
+  if(!error)allCards=data||[];
+  updateKPIs();
+}
+
+function updateKPIs(){
+  const active=allCards.filter(c=>!c.sold);
+  const val=active.reduce((s,c)=>s+(c.slabtrack_value||c.purchase_price||0),0);
+  const cost=active.reduce((s,c)=>s+(c.purchase_price||0),0);
+  const gain=val-cost;
+  const ret=cost>0?(gain/cost)*100:0;
+  const fs=active.filter(c=>c.for_sale).length;
+  $('kVal').textContent=$n(val);
+  $('kCost').textContent=$n(cost);
+  $('kGain').textContent=(gain>=0?'+':'')+$n(Math.abs(gain));
+  $('kGain').className='kpi-val '+(gain>=0?'green':'red');
+  $('kRet').textContent=$p(ret);
+  $('kRet').className='kpi-val '+(ret>=0?'green':'red');
+  $('fsCnt').textContent=fs;
+}
+
+function goTab(n){
+  curTab=n;
+  [0,1,2].forEach(i=>$(('tb'+i)).classList.toggle('on',i===n));
+  if(n===0){drillSport=null;drillPlayer=null;showSports();}
+  else if(n===1)showForSale();
+  else showSold();
+}
+
+// ── LEVEL 1: SPORTS ──
+function showSports(){
+  const active=allCards.filter(c=>!c.sold);
+  const sports={};
+  active.forEach(c=>{
+    const s=cap(c.sport)||'Other';
+    if(!sports[s])sports[s]={cnt:0,val:0,cost:0,players:new Set()};
+    sports[s].cnt++;
+    sports[s].val+=Number(c.slabtrack_value||c.purchase_price||0);
+    sports[s].cost+=Number(c.purchase_price||0);
+    sports[s].players.add(c.player_name);
+  });
+  const sorted=Object.entries(sports).sort((a,b)=>b[1].val-a[1].val);
+
+  let html=`<div class="toolbar">
+    <div class="toolbar-l"><div class="toolbar-title">MY COLLECTION</div><div class="toolbar-cnt">${active.length} cards</div></div>
+    <div class="toolbar-r">
+      <button class="t-btn" onclick="openM('csvModal')">📂 CSV</button>
+      <button class="t-btn" id="refBtn" onclick="refreshPrices()">⚡ Refresh Prices</button>
+      <button class="t-btn gold" onclick="openM('addModal')">+ Add Card</button>
+    </div>
+  </div>`;
+
+  if(!sorted.length){
+    html+=`<div class="empty"><div class="empty-ico">🃏</div><div class="empty-ttl">NO CARDS YET</div><div class="empty-sub">Add your first card or upload a CSV.</div><div class="empty-btns"><button class="t-btn gold" style="padding:10px 20px;" onclick="openM('addModal')">+ Add Card</button><button class="t-btn" onclick="openM('csvModal')">📂 Upload CSV</button></div></div>`;
+  } else {
+    html+=`<div class="sport-grid">`;
+    sorted.forEach(([sport,d])=>{
+      const gain=d.val-d.cost;
+      const ret=(d.cost>0&&isFinite(gain/d.cost))?(gain/d.cost)*100:0;
+      html+=`<div class="sport-card" onclick="showPlayers('${sport}')">
+        <div class="sport-stripe ${sportCls(sport)}"></div>
+        <div class="sport-body">
+          <div class="sport-top">
+            <span class="sport-ico">${sportIco(sport)}</span>
+            <span class="sport-name">${sport}</span>
+            <span class="sport-arrow">›</span>
+          </div>
+          <div class="sport-meta">${d.players.size} player${d.players.size!==1?'s':''} · ${d.cnt} card${d.cnt!==1?'s':''}</div>
+          <div class="sport-val">${$n(d.val)}</div>
+          <div class="sport-gain" style="color:${gain>=0?'#059669':'#DC2626'}">${gain>=0?'▲':'▼'} ${$n(Math.abs(gain))} (${$p(ret)})</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  $('mainArea').innerHTML=html;
+}
+
+// ── LEVEL 2: PLAYERS (tiles) ──
+function showPlayers(sport){
+  drillSport=sport;
+  const sportCards=allCards.filter(c=>!c.sold&&(cap(c.sport)||'Other')===sport);
+  const players={};
+  sportCards.forEach(c=>{
+    const p=c.player_name||'Unknown';
+    if(!players[p])players[p]={cnt:0,val:0,cost:0,grades:[],signal:c.signal||'Hold'};
+    players[p].cnt++;
+    players[p].val+=Number(c.slabtrack_value||c.purchase_price||0);
+    players[p].cost+=Number(c.purchase_price||0);
+    if(c.grade)players[p].grades.push(c.grade);
+    if(c.signal&&c.signal!=='Hold')players[p].signal=c.signal;
+  });
+  let sorted=Object.entries(players).sort((a,b)=>b[1].val-a[1].val);
+  const sportVal=sportCards.reduce((s,c)=>s+Number(c.slabtrack_value||c.purchase_price||0),0);
+  const sportCost=sportCards.reduce((s,c)=>s+Number(c.purchase_price||0),0);
+  const sportGain=sportVal-sportCost;
+  const graded=sportCards.filter(c=>c.grade&&c.grade!=='Raw').length;
+  const bestPlayer=sorted[0]?sorted[0][0]:'—';
+  const topVal=sorted[0]?sorted[0][1].val:1;
+
+  function gradePills(grades){
+    const uniq=[...new Set(grades)].slice(0,3);
+    return uniq.map(g=>{
+      const grader=g.split(' ')[0].toUpperCase();
+      const cls=grader==='PSA'?'grade-psa':grader==='BGS'?'grade-bgs':grader==='SGC'?'grade-sgc':'grade-raw';
+      return`<span class="player-tile-grade ${cls}">${g}</span>`;
+    }).join('');
+  }
+
+  function sigBadge(s){
+    const m={'Strong Buy':'sb','Buy':'b','Hold':'h','Watch':'w','Sell':'s'};
+    return`<span class="sig sig-${m[s]||'h'}">${s||'Hold'}</span>`;
+  }
+
+  function buildTiles(list){
+    return list.map(([player,d])=>{
+      const gain=d.val-d.cost;
+      const ret=(d.cost>0&&isFinite(gain/d.cost))?(gain/d.cost)*100:0;
+      const pct=topVal>0?Math.round((d.val/topVal)*100):0;
+      const sc=sportCls(sport);
+      const safePlayer=player.replace(/'/g,"\'");
+      return`<div class="player-tile" onclick="showCards('${sport}','${safePlayer}')">
+        <div class="player-tile-stripe ${sc}"></div>
+        <div class="player-tile-body">
+          <div class="player-tile-top">
+            <div class="player-tile-name">${player}</div>
+            <div class="player-tile-cnt">${d.cnt} card${d.cnt!==1?'s':''}</div>
+          </div>
+          <div class="player-tile-val">${$n(d.val)}</div>
+          <div class="player-tile-gain">
+            <span class="player-tile-gain-val ${gain>=0?'gain-up':'gain-dn'}">${gain>=0?'▲':'▼'} ${$n(Math.abs(gain))}</span>
+            <span style="font-size:11px;color:#aaa;">(${$p(ret)})</span>
+          </div>
+          <div class="player-tile-sigs">
+            ${sigBadge(d.signal)}
+            ${gradePills(d.grades)}
+          </div>
+          <div class="player-tile-bar-wrap">
+            <div class="player-tile-bar-lbl"><span>% OF TOP</span><span>${pct}%</span></div>
+            <div class="player-tile-bar-bg"><div class="player-tile-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  let html=`<div class="toolbar">
+    <div class="toolbar-l">
+      <div class="bc">
+        <span class="bc-back" onclick="showSports()">← All Sports</span>
+        <span class="bc-sep">›</span>
+        <span class="bc-cur">${sportIco(sport)} ${sport}</span>
+      </div>
+    </div>
+    <div class="toolbar-r">
+      <input class="t-inp" placeholder="Search player..." id="pSearch" oninput="filterPlayers(this.value)">
+      <select class="t-sel" id="pSort" onchange="sortPlayersBy(this.value)">
+        <option value="value">Sort: Value ↓</option>
+        <option value="gain">Sort: Gain ↓</option>
+        <option value="name">Sort: A–Z</option>
+        <option value="cards">Sort: # Cards ↓</option>
+      </select>
+      <button class="t-btn gold" onclick="openM('addModal')">+ Add Card</button>
+    </div>
+  </div>
+  <div class="sport-stat-bar">
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Total Value</div><div class="sport-stat-val gold">${$n(sportVal)}</div></div>
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Total Gain</div><div class="sport-stat-val ${sportGain>=0?'green':'red'}">${sportGain>=0?'+':''}${$n(Math.abs(sportGain))}</div></div>
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Cards</div><div class="sport-stat-val">${sportCards.length}</div></div>
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Graded</div><div class="sport-stat-val">${graded}</div></div>
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Best Card</div><div class="sport-stat-val" style="font-size:13px;">${bestPlayer}</div></div>
+  </div>
+  <div style="font-size:12px;color:#999;margin-bottom:12px;">${sorted.length} players</div>
+  <div class="player-grid" id="playerGrid">${buildTiles(sorted)}</div>`;
+
+  $('mainArea').innerHTML=html;
+  window._sportSorted=sorted;
+  window._topVal=topVal;
+  window._sportName=sport;
+
+  window.filterPlayers=function(q){
+    const f=q?window._sportSorted.filter(([p])=>p.toLowerCase().includes(q.toLowerCase())):window._sportSorted;
+    $('playerGrid').innerHTML=buildTiles(f);
+  };
+  window.sortPlayersBy=function(s){
+    let arr=[...window._sportSorted];
+    if(s==='value')arr.sort((a,b)=>b[1].val-a[1].val);
+    else if(s==='gain')arr.sort((a,b)=>(b[1].val-b[1].cost)-(a[1].val-a[1].cost));
+    else if(s==='name')arr.sort((a,b)=>a[0].localeCompare(b[0]));
+    else arr.sort((a,b)=>b[1].cnt-a[1].cnt);
+    window._sportSorted=arr;
+    $('playerGrid').innerHTML=buildTiles(arr);
+  };
+}
+
+// ── LEVEL 3: CARDS (detailed tiles) ──
+function showCards(sport, player){
+  drillSport=sport; drillPlayer=player;
+  let playerCards=allCards.filter(c=>!c.sold&&c.player_name===player);
+  const pVal=playerCards.reduce((s,c)=>s+Number(c.slabtrack_value||c.purchase_price||0),0);
+  const pCost=playerCards.reduce((s,c)=>s+Number(c.purchase_price||0),0);
+  const pGain=pVal-pCost;
+  const pRet=(pCost>0&&isFinite(pGain/pCost))?(pGain/pCost)*100:0;
+  const safePlayer=player.replace(/'/g,"\'");
+
+  function buildDetailCards(list){
+    if(!list.length)return'<div class="empty"><div class="empty-ico">🃏</div><div class="empty-ttl">NO CARDS</div></div>';
+    return list.map(c=>{
+      const val=Number(c.slabtrack_value||c.purchase_price||0);
+      const cost=Number(c.purchase_price||0);
+      const gain=val-cost;
+      const gainPct=(cost>0&&isFinite(gain/cost))?(gain/cost)*100:0;
+      const sc=sportCls(c.sport);
+      const setStr=[c.year,c.brand,c.card_set,c.parallel].filter(Boolean).join(' · ')||'—';
+      const gradeStr=c.grade||(c.grader?c.grader:'')||'Raw';
+      const prStr=c.print_run?' /'+c.print_run:'';
+      const grader=(c.grader||'').toUpperCase();
+      const gradeClr=grader==='PSA'?'#1a56db':grader==='BGS'?'#7e3af2':grader==='SGC'?'#c81e1e':'#6b7280';
+      // Projections (simple multipliers based on trend)
+      const trendMult=c.trend==='up'?1.08:c.trend==='down'?0.95:1.02;
+      const proj6=val*Math.pow(trendMult,0.5);
+      const proj12=val*trendMult;
+      const proj18=val*Math.pow(trendMult,1.5);
+      const EBAY_FEE = 0.129; // 12.9% eBay seller fee
+      const MIN_PROFIT = 0.15; // 15% minimum profit on cost
+      const ebayNet = Math.round(val * (1 - EBAY_FEE));
+      const costFloor = Math.round(cost * (1 + MIN_PROFIT));
+      const minPrice = Math.max(ebayNet, costFloor);
+      // Show Price is always at least Min Sell Price
+      const rawShowPrice = val > 0 ? Math.round(val * (c.grade && !c.grade.includes('Raw') ? 1.15 : 1.20)) : Math.round(cost * 1.15);
+      const showPrice = Math.max(rawShowPrice, minPrice);
+      const projYr=((trendMult-1)*100).toFixed(0);
+      return`<div class="cd">
+        <div class="cd-top-stripe ${sc}"></div>
+        <div class="cd-header">
+          <div>
+            <div class="cd-player">${c.player_name||'—'}</div>
+            <div class="cd-set">${setStr}</div>
+          </div>
+          <div class="cd-grade-badge" style="background:${gradeClr}">${gradeStr}${prStr}</div>
+        </div>
+        <div class="cd-section">
+          <div class="cd-section-lbl">Market Value</div>
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <div class="cd-mktval">${$n(val)}</div>
+            <div class="cd-gain" style="color:${gain>=0?'#059669':'#DC2626'}">${gain>=0?'+':''}${$n(Math.abs(gain))}<br><span style="font-size:11px;">${gain>=0?'+':''}${$p(gainPct)}</span></div>
+          </div>
+        </div>
+        <div class="cd-section">
+          <div class="cd-section-lbl">Projections</div>
+          <div class="cd-proj-grid">
+            <div class="cd-proj-box"><div class="cd-proj-lbl">6-Month</div><div class="cd-proj-val">${$n(proj6)}</div></div>
+            <div class="cd-proj-box"><div class="cd-proj-lbl">12-Month</div><div class="cd-proj-val">${$n(proj12)}</div></div>
+            <div class="cd-proj-box"><div class="cd-proj-lbl">18-Month</div><div class="cd-proj-val">${$n(proj18)}</div></div>
+          </div>
+        </div>
+        <div class="cd-section">
+          <div class="cd-section-lbl">Pricing</div>
+          <div class="cd-price-grid">
+            <div class="cd-price-box"><div class="cd-price-lbl">Cost Basis</div><div class="cd-price-val">${$n(cost)}</div></div>
+            <div class="cd-price-box"><div class="cd-price-lbl">Show Price</div><div class="cd-price-val gold">${$n(showPrice)}</div></div>
+          </div>
+          <div class="cd-minprice-box"><div class="cd-price-lbl">Min Sell Price</div><div class="cd-price-val gold">${$n(minPrice)}</div></div>
+        </div>
+        <div class="cd-footer">
+          <span class="${sigCls(c.signal)}">${c.signal||'Hold'}</span>
+          <span class="cd-proj-yr">Proj +${projYr}%/yr</span>
+          <button onclick="editPrice('${c.id}','${c.player_name.replace(/'/g,"\'")}',${val})" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--gold);font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️ Edit Price</button>
+          <span class="cd-cert">CERT # ${c.cert_number||'—'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  let html=`<div class="toolbar">
+    <div class="toolbar-l">
+      <div class="bc">
+        <span class="bc-back" onclick="showSports()">← All Sports</span>
+        <span class="bc-sep">›</span>
+        <span class="bc-back" onclick="showPlayers('${sport}')">${sport}</span>
+        <span class="bc-sep">›</span>
+        <span class="bc-cur">${player}</span>
+      </div>
+    </div>
+    <div class="toolbar-r">
+      <select class="t-sel" id="cSort" onchange="sortCardGrid(this.value)">
+        <option value="value">Sort: Value ↓</option>
+        <option value="gain">Sort: Gain ↓</option>
+        <option value="year">Sort: Year ↓</option>
+      </select>
+      <button class="t-btn gold" onclick="openM('addModal')">+ Add Card</button>
+    </div>
+  </div>
+  <div class="sport-stat-bar">
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Total Value</div><div class="sport-stat-val gold">${$n(pVal)}</div></div>
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Total Gain</div><div class="sport-stat-val ${pGain>=0?'green':'red'}">${pGain>=0?'+':''}${$n(Math.abs(pGain))}</div></div>
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Return</div><div class="sport-stat-val ${pRet>=0?'green':'red'}">${$p(pRet)}</div></div>
+    <div class="sport-stat-box"><div class="sport-stat-lbl">Cards</div><div class="sport-stat-val">${playerCards.length}</div></div>
+  </div>
+  <div class="card-detail-grid" id="cardGrid">${buildDetailCards(playerCards)}</div>`;
+
+  $('mainArea').innerHTML=html;
+  window._playerCards=playerCards;
+  window.sortCardGrid=function(s){
+    let arr=[...window._playerCards];
+    if(s==='value')arr.sort((a,b)=>Number(b.slabtrack_value||b.purchase_price||0)-Number(a.slabtrack_value||a.purchase_price||0));
+    else if(s==='gain')arr.sort((a,b)=>(Number(b.slabtrack_value||b.purchase_price||0)-Number(b.purchase_price||0))-(Number(a.slabtrack_value||a.purchase_price||0)-Number(a.purchase_price||0)));
+    else arr.sort((a,b)=>(b.year||0)-(a.year||0));
+    $('cardGrid').innerHTML=buildDetailCards(arr);
+  };
+}
+
+// FOR SALE
+function showForSale(){
+  const fs=allCards.filter(c=>c.for_sale&&!c.sold);
+  let html=`<div class="toolbar"><div class="toolbar-l"><div class="toolbar-title">FOR SALE</div><div class="toolbar-cnt">${fs.length} listings</div></div></div>`;
+  if(fs.length){
+    html+=`<div class="fs-grid">`;
+    fs.forEach(c=>{
+      html+=`<div class="fs-card">
+        <div class="fs-badge">FOR SALE</div>
+        <div class="fs-player">${c.player_name}</div>
+        <div class="fs-set">${[c.year,c.brand,c.card_set,c.parallel].filter(Boolean).join(' · ')}</div>
+        <div class="fs-price">${$n(c.asking_price||c.slabtrack_value)}</div>
+        <div class="fs-mkt">Market: ${$n(c.ebay_price||c.slabtrack_value||c.purchase_price)}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  } else {
+    html+=`<div class="empty"><div class="empty-ico">🏷️</div><div class="empty-ttl">NO ACTIVE LISTINGS</div><div class="empty-sub">Mark cards as "For Sale" from your collection.</div></div>`;
+  }
+  $('mainArea').innerHTML=html;
+}
+
+// SOLD
+function showSold(){
+  const sold=allCards.filter(c=>c.sold);
+  let html=`<div class="toolbar"><div class="toolbar-l"><div class="toolbar-title">SOLD</div><div class="toolbar-cnt">${sold.length} cards</div></div></div>`;
+  if(sold.length){
+    html+=`<div class="card-grid">`;
+    sold.forEach(c=>{
+      const val=Number(c.slabtrack_value||c.purchase_price||0);
+      const cost=Number(c.purchase_price||0);
+      const gain=val-cost;
+      html+=`<div class="c"><div class="c-stripe ${sportCls(c.sport)}"></div><div class="c-body">
+        <div class="c-player">${c.player_name||'—'}</div>
+        <div class="c-set">${[c.year,c.brand,c.card_set].filter(Boolean).join(' · ')||'—'}</div>
+        <div class="c-row"><span class="c-lbl">Value</span><span class="c-val gold">${$n(val)}</span></div>
+        <div class="c-row"><span class="c-lbl">Gain</span><span class="c-val ${gain>=0?'green':'red'}">${gain>=0?'+':''}${$n(Math.abs(gain))}</span></div>
+        <div class="c-foot"><span class="${sigCls(c.signal)}">${c.signal||'Hold'}</span><span class="c-grade">${c.grade||'Raw'}</span></div>
+      </div></div>`;
+    });
+    html+=`</div>`;
+  } else {
+    html+=`<div class="empty"><div class="empty-ico">✅</div><div class="empty-ttl">NO SOLD CARDS</div><div class="empty-sub">Cards you've sold will appear here.</div></div>`;
+  }
+  $('mainArea').innerHTML=html;
+}
+
+// MODALS
+function openM(id){$(id).classList.add('open');}
+function closeM(id){$(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// SAVE CARD
+async function saveCard(){
+  clearMsg('addMsg');
+  const player=$('fp').value.trim();
+  if(!player)return showMsg('addMsg','Player name is required.','error');
+  const card={
+    user_id:curUser.id,player_name:player,
+    sport:$('fsp').value,year:$('fyr').value.trim(),brand:$('fbr').value.trim(),
+    card_set:$('fst').value.trim(),parallel:$('fpa').value.trim(),
+    card_number:$('fcn').value.trim(),print_run:parseInt($('fpr').value)||null,
+    grader:$('fgr').value,grade:$('fgd').value.trim(),
+    purchase_price:parseFloat($('fpp').value)||null,purchased_from:$('ffr').value.trim(),
+    purchase_date:$('fpd').value||null,cert_number:$('fct').value.trim(),
+    notes:$('fnt').value.trim(),signal:'Hold',confidence:'Low'
+  };
+  const{error}=await sb.from('cards').insert([card]);
+  if(error)return showMsg('addMsg',error.message,'error');
+  showMsg('addMsg','Card saved!','ok');
+  setTimeout(async()=>{
+    closeM('addModal');clearMsg('addMsg');
+    ['fp','fyr','fbr','fst','fpa','fcn','fpr','fgd','fpp','ffr','fpd','fct','fnt'].forEach(id=>$(id).value='');
+    await loadCards();
+    if(drillPlayer)showCards(drillSport,drillPlayer);
+    else if(drillSport)showPlayers(drillSport);
+    else showSports();
+  },700);
+}
+
+// CSV
+let csvData=[];
+function handleCSV(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.trim().split('\n');
+    const hdrs=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+    csvData=lines.slice(1).map(line=>{
+      const vals=[];let inQ=false,cur='';
+      for(let ch of line){if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}else{cur+=ch;}}
+      vals.push(cur.trim());
+      const row={};hdrs.forEach((h,i)=>row[h]=vals[i]||'');return row;
+    }).filter(r=>Object.values(r).some(v=>v));
+    const prev=$('csvPrev');
+    prev.style.display='block';
+    prev.innerHTML=`<strong style="color:#333">Found ${csvData.length} cards</strong><br><br>`+
+      csvData.slice(0,5).map(r=>[r.player||r.player_name||r.name,r.year,r.set||r.card_set,r.variation||r.parallel].filter(Boolean).join(' · ')).join('<br>')+
+      (csvData.length>5?`<br><span style="color:#aaa">...and ${csvData.length-5} more</span>`:'');
+    $('csvBtn').disabled=false;
+  };
+  reader.readAsText(file);
+}
+
+async function importCSV(){
+  if(!csvData.length)return;
+  showMsg('csvMsg','Importing...','ok');
+  $('csvBtn').disabled=true;
+  const rows=csvData.map(r=>{
+    const condition=r.condition||r.grade||'';
+    let grader='',grade='';
+    if(condition){
+      const parts=condition.trim().split(' ');
+      if(['PSA','BGS','SGC','CGC'].includes(parts[0].toUpperCase())){grader=parts[0].toUpperCase();grade=condition;}
+      else{grade=condition;}
+    }
+    const sport=(r.category||r.sport||'').toLowerCase();
+    const sportMapped=sport.includes('baseball')?'baseball':sport.includes('basketball')?'basketball':sport.includes('football')?'football':sport.includes('hockey')?'hockey':r.category||r.sport||'other';
+    const purchasePrice=parseFloat(r.investment||r['purchase price']||r.purchase_price||r.price||0)||null;
+    const currentVal=parseFloat(r['current value']||r.current_value||r['currentvalue']||0)||null;
+    let brand='';
+    const desc=(r.card||r.set||'');
+    ['Topps','Panini','Donruss','Fleer','Upper Deck','Bowman','Score','Select','Prizm','Optic','Mosaic'].forEach(b=>{if(desc.includes(b))brand=b;});
+    return{
+      user_id:curUser.id,
+      player_name:r.player||r.player_name||r.name||'',
+      year:r.year||'',brand,
+      card_set:r.set||r.card_set||'',
+      parallel:r.variation||r.parallel||'',
+      card_number:r.number||r.card_number||'',
+      print_run:parseInt(r.number)||null,
+      grade,grader,sport:sportMapped,
+      purchase_price:purchasePrice,
+      slabtrack_value:currentVal,
+      ebay_price:currentVal,
+      purchased_from:'Card Ladder',
+      purchase_date:r['date purchased']||r.date_purchased||r.purchase_date||null,
+      cert_number:r['slab serial #']||r.slab_serial||r.cert_number||'',
+      notes:r.notes||'',signal:'Hold',confidence:'Low'
+    };
+  }).filter(c=>c.player_name);
+
+  const{error}=await sb.from('cards').insert(rows);
+  if(error){showMsg('csvMsg',error.message,'error');$('csvBtn').disabled=false;return;}
+  showMsg('csvMsg','✅ '+rows.length+' cards imported!','ok');
+  setTimeout(async()=>{
+    closeM('csvModal');csvData=[];
+    $('csvPrev').style.display='none';
+    $('csvBtn').disabled=true;clearMsg('csvMsg');
+    await loadCards();showSports();
+  },900);
+}
+
+const drop=$('csvDrop');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{
+  e.preventDefault();drop.classList.remove('over');
+  const file=e.dataTransfer.files[0];
+  if(file){const fi=$('csvFile');const dt=new DataTransfer();dt.items.add(file);fi.files=dt.files;handleCSV(fi);}
+});
+
+// EBAY PRICING
+async function refreshPrices(){
+  const active=allCards.filter(c=>!c.sold);
+  if(!active.length)return;
+  const btn=$('refBtn');if(!btn)return;
+  btn.disabled=true;btn.textContent='⏳ Pricing...';
+  $('progLbl').style.display='block';
+  $('progWrap').style.display='block';
+  $('progBar').style.width='0%';
+  let done=0;
+  for(const card of active){
+    $('progLbl').textContent='Pricing '+card.player_name+'... ('+( done+1)+'/'+active.length+')';
+    try{
+      // Build a clean search query
+      const qParts = [card.player_name];
+      if(card.year) qParts.push(card.year);
+      // Only add brand if different from card_set
+      if(card.brand && card.card_set && !card.card_set.toLowerCase().includes(card.brand.toLowerCase())) qParts.push(card.brand);
+      else if(card.brand && !card.card_set) qParts.push(card.brand);
+      if(card.card_set && card.card_set !== card.brand) qParts.push(card.card_set);
+      if(card.parallel && card.parallel !== card.card_set && card.parallel !== card.brand) qParts.push(card.parallel);
+      if(card.print_run) qParts.push('/'+card.print_run);
+      if(card.grade) qParts.push(card.grade);
+      const searchQuery = qParts.filter(Boolean).join(' ').trim();
+
+      const res=await fetch(EDGE,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+SKEY},
+        body:JSON.stringify({query:searchQuery,purchase_price:card.purchase_price})
+      });
+      const data=await res.json();
+      if(data.success&&data.ebayPrice>0){
+        await sb.from('cards').update({ebay_price:data.ebayPrice,slabtrack_value:data.slabtrackValue,confidence:data.confidence,signal:data.signal,trend:data.trend,last_priced_at:new Date().toISOString()}).eq('id',card.id);
+      }
+    }catch(e){console.error(e);}
+    done++;
+    $('progBar').style.width=(done/active.length*100)+'%';
+  }
+  $('progLbl').textContent='✅ Priced '+done+' cards!';
+  setTimeout(()=>{$('progLbl').style.display='none';$('progWrap').style.display='none';},3000);
+  btn.textContent='⚡ Refresh Prices';btn.disabled=false;
+  await loadCards();showSports();
+}
+
+// EDIT PRICE
+async function editPrice(cardId, playerName, currentVal) {
+  const newVal = prompt(`Enter correct eBay market value for ${playerName}:`, currentVal);
+  if (!newVal || isNaN(parseFloat(newVal))) return;
+  const val = parseFloat(newVal);
+  const { error } = await sb.from('cards').update({
+    ebay_price: val,
+    slabtrack_value: val,
+    last_priced_at: new Date().toISOString()
+  }).eq('id', cardId);
+  if (error) { alert('Error saving: ' + error.message); return; }
+  await loadCards();
+  showCards(drillSport, drillPlayer);
+}
+
+// INIT
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session){curUser=session.user;bootApp();}
+});
+</script>
+</body>
+</html>
